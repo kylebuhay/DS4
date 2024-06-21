@@ -4,7 +4,6 @@ from torch.utils.data.dataset import Dataset
 from torchvision import transforms
 
 class dataset(Dataset):
-    # method to initialize dataset with the provided root path and selected split
     def __init__(self, root_path, split='train'):
         self.root_path = root_path
         
@@ -20,7 +19,6 @@ class dataset(Dataset):
         else:
             raise ValueError("split must be 'train', 'validation', or 'test'")
         
-        # Ensure directories exist and are not empty
         if not os.path.isdir(image_dir) or not os.path.isdir(mask_dir):
             raise FileNotFoundError(f"Directories {image_dir} or {mask_dir} do not exist")
         
@@ -33,15 +31,13 @@ class dataset(Dataset):
         if len(self.images) != len(self.masks):
             raise ValueError("Number of images and masks must be equal")
 
-        # Set of transformations to apply to images
         self.image_transform = transforms.Compose([
-            transforms.Resize((256, 256)),
+            transforms.Resize((224, 224)),
             transforms.ToTensor()
         ])
         
-        # Set of transformations to apply to masks
         self.mask_transform = transforms.Compose([
-            transforms.Resize((256, 256)),
+            transforms.Resize((224, 224)),
             transforms.ToTensor()
         ])
 
@@ -49,7 +45,16 @@ class dataset(Dataset):
         img = Image.open(self.images[index]).convert("RGB")
         mask = Image.open(self.masks[index]).convert("L")
 
-        return self.image_transform(img), self.mask_transform(mask)
+        if self.image_transform is not None:
+            img = self.image_transform(img)
+        if self.mask_transform is not None:
+            mask = self.mask_transform(mask)
+
+
+        # Binarize the mask
+        mask = (mask > 0.5).float()
+
+        return img, mask
 
     def __len__(self):
         return len(self.images)
